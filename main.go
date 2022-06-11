@@ -14,7 +14,7 @@ import (
 
 const templatePath = "templates/*"
 
-const sfspca = "https://www.sfspca.org/wp-json/sfspca/v1/filtered-posts/get-adoptions?current-term%5Bid%5D=94&current-term%5Btaxonomy%5D=species&ignored-terms%5Bsfspca-adoption-site%5D%5B%5D=74&ignored-terms%5Bsfspca-adoption-site%5D%5B%5D=128&ignored-terms%5Bsfspca-adoption-site%5D%5B%5D=485&ignored-terms%5Bsfspca-adoption-gender%5D%5B%5D=354&order=ASC&orderby=date"
+const sfspca = "https://www.sfspca.org/wp-json/sfspca/v1/filtered-posts/get-adoptions?current-term[id]=94&current-term[taxonomy]=species&ignored-terms[sfspca-adoption-site][]=74&ignored-terms[sfspca-adoption-site][]=128&ignored-terms[sfspca-adoption-site][]=485&ignored-terms[sfspca-adoption-gender][]=354&order=ASC&orderby=date&page=1&per_page=100"
 
 var doggos SFSPCA_Response
 
