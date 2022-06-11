@@ -1,0 +1,8 @@
+emails:
+  - fuziontech@gmail.com
+  - doggos@devnull.com
+postgres:
+  url: "postgresql://localhost/dogwatcher"
+mailgun:
+  domain: "doggo.com"
+  private_key: "mailgun-private_key-here-plz"
