@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func sendMail(mg *mailgun.MailgunImpl, recipient string, doggos SFSPCA_Response) {
+func sendMail(mg *mailgun.MailgunImpl, recipient string, doggos SFSPCAResponse) {
 
 	sender := "doggos@jams.dog"
 	subject := "Doggos!"

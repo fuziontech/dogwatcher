@@ -6,6 +6,8 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/mailgun/mailgun-go/v4"
 	"github.com/spf13/viper"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 	"io"
 	"log"
 	"net/http"
@@ -18,35 +20,14 @@ const (
 )
 
 type ServerContext struct {
+	gdb        *gorm.DB
 	mg         *mailgun.MailgunImpl
 	recipients []string
 }
 
-var doggos SFSPCA_Response
+var doggos SFSPCAResponse
 
-type Doggo struct {
-	Title string
-	Tags  struct {
-		Gender         string
-		WeightCategory string `json:"weight-category"`
-		Species        string
-		Breed          string
-		Color          string
-		Location       string
-		Site           string
-	}
-	Permalink string
-	Thumb     []string
-	Age       string
-}
-
-type SFSPCA_Response struct {
-	Items     []Doggo
-	Total     int16
-	Displayed int16
-}
-
-func startWebServer(sc ServerContext, resp SFSPCA_Response) {
+func startWebServer(sc ServerContext, resp SFSPCAResponse) {
 	r := gin.Default()
 	r.LoadHTMLGlob(templatePath)
 	r.GET("/", func(c *gin.Context) {
@@ -64,7 +45,7 @@ func startWebServer(sc ServerContext, resp SFSPCA_Response) {
 	r.Run()
 }
 
-func getDoggos() SFSPCA_Response {
+func getDoggos() SFSPCAResponse {
 	resp, err := http.Get(sfspca)
 	if err != nil {
 		log.Panic(err)
@@ -75,7 +56,7 @@ func getDoggos() SFSPCA_Response {
 		log.Panic(err)
 	}
 
-	var response_object SFSPCA_Response
+	var response_object SFSPCAResponse
 	err = json.Unmarshal(dog_bytes, &response_object)
 	if err != nil {
 		log.Panic(err)
@@ -85,6 +66,7 @@ func getDoggos() SFSPCA_Response {
 }
 
 func main() {
+	// Load configs
 	viper.SetConfigFile("config.yaml")
 	viper.AddConfigPath(".")
 	err := viper.ReadInConfig()
@@ -92,28 +74,50 @@ func main() {
 		log.Panicf("Fatal error config file: %w \n", err)
 	}
 
+	postgresURL := viper.GetString("postgres.url")
 	emailDomain := viper.GetString("mailgun.domain")
 	privateAPIKey := viper.GetString("mailgun.private_key")
 	recipients := viper.GetStringSlice("emails")
 	log.Printf("emails subscribed: %s", recipients)
 
+	// Configure Postgres
+	db, err := gorm.Open(postgres.Open(postgresURL), &gorm.Config{})
+	if err != nil {
+		log.Panicf("failed to connect to postgres with error %s", err)
+	}
+
+	err = db.AutoMigrate(&Doggo{})
+	if err != nil {
+		log.Panicf("failed to migrate %s", err)
+	}
+
+	// Configure mailgun
 	mg := mailgun.NewMailgun(emailDomain, privateAPIKey)
 
+	// Configure server context
 	sc := ServerContext{
+		db,
 		mg,
 		recipients,
 	}
 
-	s := gocron.NewScheduler(time.UTC)
-
+	// Preload doggos
 	doggos = getDoggos()
 
+	// configure CRON
+	s := gocron.NewScheduler(time.UTC)
 	s.Every(1).Day().At("14:00").Do(func() {
 		doggos = getDoggos()
 		for _, recipient := range recipients {
 			sendMail(mg, recipient, doggos)
 		}
 	})
+	s.StartAsync()
+
+	err = saveDoggos(sc, doggos)
+	if err != nil {
+		log.Panicf("could not save doggos %s", err)
+	}
 
 	startWebServer(sc, doggos)
 }
