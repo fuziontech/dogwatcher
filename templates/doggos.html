@@ -1,0 +1,45 @@
+<html>
+<head>
+    <!-- Compiled and minified CSS -->
+    <style>
+        {{template "styleCSS" .}}
+    </style>
+</head>
+<body>
+<div class="container">
+<h1><a href="https://www.sfspca.org/adoptions/dogs/??">Doggos!</a></h1>
+<p>There are {{ .doggos.Total }} doggos here</p>
+<ul>
+{{- range $doggo := .doggos.Items }}
+<div class="row">
+    <li>
+        <h1><a href="{{$doggo.Permalink}}">{{$doggo.Title}}</a></h1>
+        <div class="row col s8">
+        <table>
+            <tr>
+                <tr><td>Gender:</td> <td>{{$doggo.Tags.Gender}}</td></tr>
+                <tr><td>Weight Category:</td> <td>{{$doggo.Tags.WeightCategory}}</td></tr>
+                <tr><td>Species:</td> <td>{{$doggo.Tags.Species}}</td></tr>
+                <tr><td>Breed:</td> <td>{{$doggo.Tags.Breed}}</td></tr>
+                <tr><td>Color:</td> <td>{{$doggo.Tags.Color}}</td></tr>
+                <tr><td>Location:</td> <td>{{$doggo.Tags.Location}}</td></tr>
+                <tr><td>Site:</td> <td>{{$doggo.Tags.Site}}</td></tr>
+            </tr>
+        </table>
+        </div>
+        <div class="row">
+        {{- range $img := $doggo.Thumb }}
+        <div class="row">
+        <div class="col s6">
+            <img src="{{$img}}" />
+        </div>
+        </div>
+        {{- end }}
+        </div>
+</li>
+</div>
+{{- end }}
+</ul>
+</div>
+</body>
+</html>
