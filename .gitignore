@@ -21,4 +21,5 @@
 go.work
 .idea/
 
+dogwatcher
 config.yaml
