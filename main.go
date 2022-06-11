@@ -12,9 +12,15 @@ import (
 	"time"
 )
 
-const templatePath = "templates/*"
+const (
+	templatePath = "templates/*"
+	sfspca       = "https://www.sfspca.org/wp-json/sfspca/v1/filtered-posts/get-adoptions?current-term[id]=94&current-term[taxonomy]=species&ignored-terms[sfspca-adoption-site][]=74&ignored-terms[sfspca-adoption-site][]=128&ignored-terms[sfspca-adoption-site][]=485&ignored-terms[sfspca-adoption-gender][]=354&order=ASC&orderby=date&page=1&per_page=100"
+)
 
-const sfspca = "https://www.sfspca.org/wp-json/sfspca/v1/filtered-posts/get-adoptions?current-term[id]=94&current-term[taxonomy]=species&ignored-terms[sfspca-adoption-site][]=74&ignored-terms[sfspca-adoption-site][]=128&ignored-terms[sfspca-adoption-site][]=485&ignored-terms[sfspca-adoption-gender][]=354&order=ASC&orderby=date&page=1&per_page=100"
+type ServerContext struct {
+	mg         *mailgun.MailgunImpl
+	recipients []string
+}
 
 var doggos SFSPCA_Response
 
@@ -40,14 +46,20 @@ type SFSPCA_Response struct {
 	Displayed int16
 }
 
-func startWebServer(resp SFSPCA_Response) {
+func startWebServer(sc ServerContext, resp SFSPCA_Response) {
 	r := gin.Default()
 	r.LoadHTMLGlob(templatePath)
-	r.GET("/doggos", func(c *gin.Context) {
+	r.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "doggos.html", gin.H{
 			"title":  "SFSPCA Doggos",
 			"doggos": resp,
 		})
+	})
+	r.GET("/emails/send", func(c *gin.Context) {
+		for _, r := range sc.recipients {
+			sendMail(sc.mg, r, doggos)
+		}
+		c.String(http.StatusOK, "Sent!")
 	})
 	r.Run()
 }
@@ -87,6 +99,11 @@ func main() {
 
 	mg := mailgun.NewMailgun(emailDomain, privateAPIKey)
 
+	sc := ServerContext{
+		mg,
+		recipients,
+	}
+
 	s := gocron.NewScheduler(time.UTC)
 
 	doggos = getDoggos()
@@ -98,5 +115,5 @@ func main() {
 		}
 	})
 
-	startWebServer(doggos)
+	startWebServer(sc, doggos)
 }
