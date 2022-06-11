@@ -170,7 +170,7 @@ func findAdoptedDoggos(ctx ServerContext, response SFSPCAResponse) ([]Doggo, err
 	if err != nil {
 		return []Doggo{}, err
 	}
-	err = ctx.gdb.Model(Doggo{}).Where(ids).Where("adopted_at is Null").Update("adopted_at", time.Now()).Error
+	err = ctx.gdb.Model(Doggo{}).Not(ids).Where("adopted_at is Null").Update("adopted_at", time.Now()).Error
 	if err != nil {
 		return []Doggo{}, err
 	}
