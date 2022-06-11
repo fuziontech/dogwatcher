@@ -1,11 +1,13 @@
 package main
 
 import (
+	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 )
 
-func startWebServer(ctx ServerContext) {
+func startWebServer(ctx ServerContext, webDomain string) {
 	r := gin.Default()
 	r.LoadHTMLGlob(templatePath)
 	r.Static("/static", "./static")
@@ -32,5 +34,9 @@ func startWebServer(ctx ServerContext) {
 		}
 		c.String(http.StatusOK, "Sent!")
 	})
-	r.Run()
+	if ctx.isProduction {
+		log.Fatal(autotls.Run(r, webDomain))
+	} else {
+		r.Run()
+	}
 }

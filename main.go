@@ -19,9 +19,10 @@ const (
 )
 
 type ServerContext struct {
-	gdb        *gorm.DB
-	mg         *mailgun.MailgunImpl
-	recipients []string
+	gdb          *gorm.DB
+	mg           *mailgun.MailgunImpl
+	recipients   []string
+	isProduction bool
 }
 
 func fetchDoggos() SFSPCAResponse {
@@ -58,7 +59,10 @@ func main() {
 		log.Panicf("Fatal error config file: %w \n", err)
 	}
 
+	isProd := viper.GetBool("production")
+
 	postgresURL := viper.GetString("postgres.url")
+	webDomain := viper.GetString("web.domain")
 	emailDomain := viper.GetString("mailgun.domain")
 	privateAPIKey := viper.GetString("mailgun.private_key")
 	recipients := viper.GetStringSlice("emails")
@@ -83,6 +87,7 @@ func main() {
 		db,
 		mg,
 		recipients,
+		isProd,
 	}
 
 	// configure CRON
@@ -105,5 +110,5 @@ func main() {
 		log.Panicf("could not update doggos %s", err)
 	}
 
-	startWebServer(ctx)
+	startWebServer(ctx, webDomain)
 }
