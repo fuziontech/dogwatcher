@@ -41,8 +41,8 @@ type Doggo struct {
 	Location       string
 	Site           string
 	Permalink      string
-	ThumbURLs      datatypes.JSON
-	Thumbs         datatypes.JSON
+	JSONThumbURLs  datatypes.JSON
+	JSONThumbs     datatypes.JSON
 	Age            string
 	AdoptedAt      sql.NullTime
 	LastSeen       time.Time
@@ -81,19 +81,28 @@ func (jsonDoggo JSONDoggo) toDoggoModel() Doggo {
 	doggo.Location = jsonDoggo.Tags.Location
 	doggo.Site = jsonDoggo.Tags.Site
 	doggo.Permalink = jsonDoggo.Permalink
-	doggo.ThumbURLs = thumbs
+	doggo.JSONThumbURLs = thumbs
 	doggo.Age = jsonDoggo.Age
 	doggo.LastSeen = time.Now()
 
 	return doggo
 }
 
+func (doggo Doggo) ThumbURLs() []string {
+	var thumbs []string
+	err := json.Unmarshal(doggo.JSONThumbURLs, &thumbs)
+	if err != nil {
+		log.Panicf("cannot get thumb urls from json urls %s", err)
+	}
+	return thumbs
+}
+
 func (doggo Doggo) fillThumbs() Doggo {
 	var thumbs [][]byte
 	var thumbURLs []string
-	err := json.Unmarshal(doggo.ThumbURLs, &thumbURLs)
+	err := json.Unmarshal(doggo.JSONThumbURLs, &thumbURLs)
 	if err != nil {
-		log.Panicf("unable to unmarshal thumb urls %s with error %s", doggo.ThumbURLs, err)
+		log.Panicf("unable to unmarshal thumb urls %s with error %s", doggo.JSONThumbURLs, err)
 	}
 
 	for _, thumbURL := range thumbURLs {
@@ -112,7 +121,7 @@ func (doggo Doggo) fillThumbs() Doggo {
 		thumbs = append(thumbs, thumb)
 	}
 	jthumbs, err := json.Marshal(thumbs)
-	doggo.Thumbs = jthumbs
+	doggo.JSONThumbs = jthumbs
 	if err != nil {
 		log.Panicf("couldn't marshal the thumbs into json %s", err)
 	}
@@ -163,4 +172,13 @@ func findNewlyListedDoggos(sc ServerContext, response SFSPCAResponse) ([]Doggo, 
 		}
 	}
 	return newlyListedDoggos, nil
+}
+
+func fetchDBDoggos(sc ServerContext) ([]Doggo, error) {
+	var doggos []Doggo
+	err := sc.gdb.Where("adopted_at is null").Omit("json_thumbs").Find(&doggos).Error
+	if err != nil {
+		return doggos, err
+	}
+	return doggos, err
 }

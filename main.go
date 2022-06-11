@@ -28,15 +28,21 @@ type ServerContext struct {
 
 var doggos SFSPCAResponse
 
-func startWebServer(sc ServerContext, resp SFSPCAResponse) {
+func startWebServer(sc ServerContext) {
 	r := gin.Default()
 	r.LoadHTMLGlob(templatePath)
 	r.Static("/static", "./static")
 	r.StaticFile("/favicon.ico", "./static/favicon.ico")
 	r.GET("/", func(c *gin.Context) {
+		doggos, err := fetchDBDoggos(sc)
+		if err != nil {
+			c.Error(err)
+		}
+
 		c.HTML(http.StatusOK, "doggos.html", gin.H{
-			"title":  "SFSPCA Doggos",
-			"doggos": resp,
+			"title":      "SFSPCA Doggos",
+			"doggos":     doggos,
+			"doggoCount": len(doggos),
 		})
 	})
 	r.GET("/emails/send", func(c *gin.Context) {
@@ -48,7 +54,7 @@ func startWebServer(sc ServerContext, resp SFSPCAResponse) {
 	r.Run()
 }
 
-func getDoggos() SFSPCAResponse {
+func fetchDoggos() SFSPCAResponse {
 	resp, err := http.Get(sfspca)
 	if err != nil {
 		log.Panic(err)
@@ -110,12 +116,12 @@ func main() {
 	}
 
 	// Preload doggos
-	doggos = getDoggos()
+	doggos = fetchDoggos()
 
 	// configure CRON
 	s := gocron.NewScheduler(time.UTC)
 	s.Every(1).Day().At("14:00").Do(func() {
-		doggos = getDoggos()
+		doggos = fetchDoggos()
 		for _, recipient := range recipients {
 			sendMail(mg, recipient, doggos)
 		}
@@ -153,5 +159,5 @@ func main() {
 		}
 	}
 
-	startWebServer(sc, doggos)
+	startWebServer(sc)
 }
