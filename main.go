@@ -43,7 +43,7 @@ type SFSPCA_Response struct {
 func startWebServer(resp SFSPCA_Response) {
 	r := gin.Default()
 	r.LoadHTMLGlob(templatePath)
-	r.GET("/index", func(c *gin.Context) {
+	r.GET("/doggos", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "doggos.html", gin.H{
 			"title":  "SFSPCA Doggos",
 			"doggos": resp,
