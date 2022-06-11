@@ -102,13 +102,14 @@ func main() {
 			sendMail(mg, recipient, doggos)
 		}
 	})
+	s.Every(1).Hour().Do(func() {
+		fetchAndUpdateDoggos(ctx)
+		if err != nil {
+			log.Panicf("cannot update doggos %s", err)
+		}
+	})
 	s.StartAsync()
 
-	resp := fetchDoggos()
-	_, err = updateDoggos(ctx, resp)
-	if err != nil {
-		log.Panicf("could not update doggos %s", err)
-	}
-
+	fetchAndUpdateDoggos(ctx)
 	startWebServer(ctx, webDomain)
 }

@@ -51,3 +51,13 @@ func updateDoggos(ctx ServerContext, resp SFSPCAResponse) (DoggoStatus, error) {
 	}
 	return ds, nil
 }
+
+func fetchAndUpdateDoggos(ctx ServerContext) error {
+	resp := fetchDoggos()
+	_, err := updateDoggos(ctx, resp)
+	if err != nil {
+		log.Panicf("could not update doggos %s", err)
+		return err
+	}
+	return nil
+}
