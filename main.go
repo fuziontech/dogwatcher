@@ -53,6 +53,11 @@ func getDoggos() SFSPCAResponse {
 	if err != nil {
 		log.Panic(err)
 	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Panicf("didn't get an OK response from SFSPCA: %s", resp.StatusCode)
+	}
 
 	dog_bytes, err := io.ReadAll(resp.Body)
 	if err != nil {

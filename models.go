@@ -6,7 +6,9 @@ import (
 	"errors"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -39,7 +41,8 @@ type Doggo struct {
 	Location       string
 	Site           string
 	Permalink      string
-	Thumb          datatypes.JSON
+	ThumbURLs      datatypes.JSON
+	Thumbs         datatypes.JSON
 	Age            string
 	AdoptedAt      sql.NullTime
 	LastSeen       time.Time
@@ -78,14 +81,46 @@ func (jsonDoggo JSONDoggo) toDoggoModel() Doggo {
 	doggo.Location = jsonDoggo.Tags.Location
 	doggo.Site = jsonDoggo.Tags.Site
 	doggo.Permalink = jsonDoggo.Permalink
-	doggo.Thumb = thumbs
+	doggo.ThumbURLs = thumbs
 	doggo.Age = jsonDoggo.Age
 	doggo.LastSeen = time.Now()
 
 	return doggo
 }
 
+func (doggo Doggo) fillThumbs() Doggo {
+	var thumbs [][]byte
+	var thumbURLs []string
+	err := json.Unmarshal(doggo.ThumbURLs, &thumbURLs)
+	if err != nil {
+		log.Panicf("unable to unmarshal thumb urls %s with error %s", doggo.ThumbURLs, err)
+	}
+
+	for _, thumbURL := range thumbURLs {
+		resp, err := http.Get(string(thumbURL))
+		if err != nil {
+			log.Panicf("couldn't get the thumb at %s: %s", thumbURL, err)
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			log.Panicf("trying to get the thumb and recieved status != 200: %s", resp.StatusCode)
+		}
+		thumb, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Panicf("couldn't read the thumb returned %s", err)
+		}
+		thumbs = append(thumbs, thumb)
+	}
+	jthumbs, err := json.Marshal(thumbs)
+	doggo.Thumbs = jthumbs
+	if err != nil {
+		log.Panicf("couldn't marshal the thumbs into json %s", err)
+	}
+	return doggo
+}
+
 func saveDoggo(sc ServerContext, doggo Doggo) error {
+	doggo = doggo.fillThumbs()
 	return sc.gdb.Create(&doggo).Error
 }
 
