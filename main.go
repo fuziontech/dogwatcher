@@ -79,7 +79,7 @@ func main() {
 	mg := mailgun.NewMailgun(emailDomain, privateAPIKey)
 
 	// Configure server context
-	sc := ServerContext{
+	ctx := ServerContext{
 		db,
 		mg,
 		recipients,
@@ -89,7 +89,7 @@ func main() {
 	s := gocron.NewScheduler(time.UTC)
 	s.Every(1).Day().At("14:00").Do(func() {
 		resp := fetchDoggos()
-		doggos, err := updateDoggos(sc, resp)
+		doggos, err := updateDoggos(ctx, resp)
 		if err != nil {
 			log.Panicf("cannot update doggos %s", err)
 		}
@@ -99,5 +99,11 @@ func main() {
 	})
 	s.StartAsync()
 
-	startWebServer(sc)
+	resp := fetchDoggos()
+	_, err = updateDoggos(ctx, resp)
+	if err != nil {
+		log.Panicf("could not update doggos %s", err)
+	}
+
+	startWebServer(ctx)
 }
