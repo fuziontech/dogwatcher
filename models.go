@@ -1,7 +1,9 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"log"
@@ -39,6 +41,8 @@ type Doggo struct {
 	Permalink      string
 	Thumb          datatypes.JSON
 	Age            string
+	AdoptedAt      sql.NullTime
+	LastSeen       time.Time
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	DeletedAt      gorm.DeletedAt `gorm:"index"`
@@ -76,17 +80,17 @@ func (jsonDoggo JSONDoggo) toDoggoModel() Doggo {
 	doggo.Permalink = jsonDoggo.Permalink
 	doggo.Thumb = thumbs
 	doggo.Age = jsonDoggo.Age
+	doggo.LastSeen = time.Now()
 
 	return doggo
 }
 
-func saveDoggo(sc ServerContext, jsonDoggo JSONDoggo) error {
-	doggo := jsonDoggo.toDoggoModel()
+func saveDoggo(sc ServerContext, doggo Doggo) error {
 	return sc.gdb.Create(&doggo).Error
 }
 
-func saveDoggos(sc ServerContext, sfspca SFSPCAResponse) error {
-	for _, doggo := range sfspca.Items {
+func saveDoggos(sc ServerContext, doggos []Doggo) error {
+	for _, doggo := range doggos {
 		err := saveDoggo(sc, doggo)
 		if err != nil {
 			log.Panicf("could not save doggo %s", err)
@@ -94,4 +98,34 @@ func saveDoggos(sc ServerContext, sfspca SFSPCAResponse) error {
 		}
 	}
 	return nil
+}
+
+func findAdoptedDoggos(sc ServerContext, response SFSPCAResponse) ([]Doggo, error) {
+	adoptedDoggos := []Doggo{}
+	var ids []uint
+	for _, d := range response.Items {
+		doggo := d.toDoggoModel()
+		ids = append(ids, doggo.ID)
+	}
+	err := sc.gdb.Not(ids).Where("adopted_at = ?", nil).Find(&adoptedDoggos).Error
+	if err != nil {
+		return []Doggo{}, err
+	}
+	return adoptedDoggos, err
+}
+
+func findNewlyListedDoggos(sc ServerContext, response SFSPCAResponse) ([]Doggo, error) {
+	var newlyListedDoggos []Doggo
+	for _, d := range response.Items {
+		doggo := d.toDoggoModel()
+		dbDoggo := Doggo{}
+		err := sc.gdb.First(&dbDoggo, doggo.ID).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			newlyListedDoggos = append(newlyListedDoggos, doggo)
+		}
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return newlyListedDoggos, err
+		}
+	}
+	return newlyListedDoggos, nil
 }

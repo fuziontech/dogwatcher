@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-co-op/gocron"
 	"github.com/mailgun/mailgun-go/v4"
@@ -30,6 +31,8 @@ var doggos SFSPCAResponse
 func startWebServer(sc ServerContext, resp SFSPCAResponse) {
 	r := gin.Default()
 	r.LoadHTMLGlob(templatePath)
+	r.Static("/static", "./static")
+	r.StaticFile("/favicon.ico", "./static/favicon.ico")
 	r.GET("/", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "doggos.html", gin.H{
 			"title":  "SFSPCA Doggos",
@@ -114,9 +117,35 @@ func main() {
 	})
 	s.StartAsync()
 
-	err = saveDoggos(sc, doggos)
+	// Load DB with Doggos and detect newly listed Doggos
+	newDoggos, err := findNewlyListedDoggos(sc, doggos)
 	if err != nil {
-		log.Panicf("could not save doggos %s", err)
+		log.Panicf("could not determine which doggos are newly listed %s", err)
+	}
+
+	if len(newDoggos) > 0 {
+		fmt.Println("NEWLY LISTED DOGGOS:")
+		for _, d := range newDoggos {
+			fmt.Printf("%s\n", d.Title)
+		}
+
+		err = saveDoggos(sc, newDoggos)
+		if err != nil {
+			log.Panicf("could not save doggos %s", err)
+		}
+	}
+
+	// Detect adopted doggos
+	adoptedDoggos, err := findAdoptedDoggos(sc, doggos)
+	if err != nil {
+		log.Panicf("could not determine which dogs have been adopted %s", err)
+	}
+
+	if len(adoptedDoggos) > 0 {
+		fmt.Println("DOGGOS FOUND A HOME!")
+		for _, d := range adoptedDoggos {
+			fmt.Printf("%s\n", d.Title)
+		}
 	}
 
 	startWebServer(sc, doggos)
