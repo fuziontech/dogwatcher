@@ -83,6 +83,7 @@ func main() {
 	emailDomain := viper.GetString("mailgun.domain")
 	privateAPIKey := viper.GetString("mailgun.private_key")
 	recipients := viper.GetStringSlice("emails")
+	log.Printf("emails subscribed: %s", recipients)
 
 	mg := mailgun.NewMailgun(emailDomain, privateAPIKey)
 
