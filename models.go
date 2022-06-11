@@ -14,6 +14,12 @@ import (
 	"time"
 )
 
+type DoggoStatus struct {
+	New       []Doggo
+	Adopted   []Doggo
+	Available []Doggo
+}
+
 type JSONDoggo struct {
 	Title string
 	Tags  struct {
@@ -97,6 +103,15 @@ func (doggo Doggo) ThumbURLs() []string {
 	return thumbs
 }
 
+func (doggo Doggo) ThumbBytes() [][]byte {
+	var thumbs [][]byte
+	err := json.Unmarshal(doggo.JSONThumbs, &thumbs)
+	if err != nil {
+		log.Panicf("cannot get thumb urls from json bytes %s", err)
+	}
+	return thumbs
+}
+
 func (doggo Doggo) fillThumbs() Doggo {
 	var thumbs [][]byte
 	var thumbURLs []string
@@ -128,14 +143,14 @@ func (doggo Doggo) fillThumbs() Doggo {
 	return doggo
 }
 
-func saveDoggo(sc ServerContext, doggo Doggo) error {
+func saveDoggo(ctx ServerContext, doggo Doggo) error {
 	doggo = doggo.fillThumbs()
-	return sc.gdb.Create(&doggo).Error
+	return ctx.gdb.Create(&doggo).Error
 }
 
-func saveDoggos(sc ServerContext, doggos []Doggo) error {
+func saveDoggos(ctx ServerContext, doggos []Doggo) error {
 	for _, doggo := range doggos {
-		err := saveDoggo(sc, doggo)
+		err := saveDoggo(ctx, doggo)
 		if err != nil {
 			log.Panicf("could not save doggo %s", err)
 			return err
@@ -144,26 +159,30 @@ func saveDoggos(sc ServerContext, doggos []Doggo) error {
 	return nil
 }
 
-func findAdoptedDoggos(sc ServerContext, response SFSPCAResponse) ([]Doggo, error) {
+func findAdoptedDoggos(ctx ServerContext, response SFSPCAResponse) ([]Doggo, error) {
 	adoptedDoggos := []Doggo{}
 	var ids []uint
 	for _, d := range response.Items {
 		doggo := d.toDoggoModel()
 		ids = append(ids, doggo.ID)
 	}
-	err := sc.gdb.Not(ids).Where("adopted_at = ?", nil).Find(&adoptedDoggos).Error
+	err := ctx.gdb.Not(ids).Where("adopted_at is Null").Find(&adoptedDoggos).Error
 	if err != nil {
 		return []Doggo{}, err
 	}
-	return adoptedDoggos, err
+	err = ctx.gdb.Model(Doggo{}).Where(ids).Where("adopted_at is Null").Update("adopted_at", time.Now()).Error
+	if err != nil {
+		return []Doggo{}, err
+	}
+	return adoptedDoggos, nil
 }
 
-func findNewlyListedDoggos(sc ServerContext, response SFSPCAResponse) ([]Doggo, error) {
+func findNewlyListedDoggos(ctx ServerContext, response SFSPCAResponse) ([]Doggo, error) {
 	var newlyListedDoggos []Doggo
 	for _, d := range response.Items {
 		doggo := d.toDoggoModel()
 		dbDoggo := Doggo{}
-		err := sc.gdb.First(&dbDoggo, doggo.ID).Error
+		err := ctx.gdb.First(&dbDoggo, doggo.ID).Error
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			newlyListedDoggos = append(newlyListedDoggos, doggo)
 		}
@@ -174,11 +193,52 @@ func findNewlyListedDoggos(sc ServerContext, response SFSPCAResponse) ([]Doggo, 
 	return newlyListedDoggos, nil
 }
 
-func fetchDBDoggos(sc ServerContext) ([]Doggo, error) {
+func fetchAvailableDoggos(ctx ServerContext) ([]Doggo, error) {
 	var doggos []Doggo
-	err := sc.gdb.Where("adopted_at is null").Omit("json_thumbs").Find(&doggos).Error
+	err := ctx.gdb.Where("adopted_at is null").Omit("json_thumbs").Find(&doggos).Error
 	if err != nil {
 		return doggos, err
 	}
 	return doggos, err
+}
+
+func fetchAdoptedDoggos(ctx ServerContext) ([]Doggo, error) {
+	yesterday := time.Now().Add(-time.Hour * 24)
+	var doggos []Doggo
+	err := ctx.gdb.Where("adopted_at >= ?", yesterday).Find(&doggos).Error
+	if err != nil {
+		return doggos, err
+	}
+	return doggos, err
+}
+
+func fetchNewDoggos(ctx ServerContext) ([]Doggo, error) {
+	yesterday := time.Now().Add(-time.Hour * 24)
+	var doggos []Doggo
+	err := ctx.gdb.Where("created_at >= ?", yesterday).Omit("json_thumbs").Find(&doggos).Error
+	if err != nil {
+		return doggos, err
+	}
+	return doggos, err
+}
+
+func fetchDBDoggos(ctx ServerContext) (DoggoStatus, error) {
+	available, err := fetchAvailableDoggos(ctx)
+	if err != nil {
+		return DoggoStatus{}, err
+	}
+	newDoggos, err := fetchNewDoggos(ctx)
+	if err != nil {
+		return DoggoStatus{}, err
+	}
+	adoptedDoggos, err := fetchAdoptedDoggos(ctx)
+	if err != nil {
+		return DoggoStatus{}, err
+	}
+	doggos := DoggoStatus{
+		Available: available,
+		New:       newDoggos,
+		Adopted:   adoptedDoggos,
+	}
+	return doggos, nil
 }

@@ -2,8 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/gin-gonic/gin"
 	"github.com/go-co-op/gocron"
 	"github.com/mailgun/mailgun-go/v4"
 	"github.com/spf13/viper"
@@ -24,34 +22,6 @@ type ServerContext struct {
 	gdb        *gorm.DB
 	mg         *mailgun.MailgunImpl
 	recipients []string
-}
-
-var doggos SFSPCAResponse
-
-func startWebServer(sc ServerContext) {
-	r := gin.Default()
-	r.LoadHTMLGlob(templatePath)
-	r.Static("/static", "./static")
-	r.StaticFile("/favicon.ico", "./static/favicon.ico")
-	r.GET("/", func(c *gin.Context) {
-		doggos, err := fetchDBDoggos(sc)
-		if err != nil {
-			c.Error(err)
-		}
-
-		c.HTML(http.StatusOK, "doggos.html", gin.H{
-			"title":      "SFSPCA Doggos",
-			"doggos":     doggos,
-			"doggoCount": len(doggos),
-		})
-	})
-	r.GET("/emails/send", func(c *gin.Context) {
-		for _, r := range sc.recipients {
-			sendMail(sc.mg, r, doggos)
-		}
-		c.String(http.StatusOK, "Sent!")
-	})
-	r.Run()
 }
 
 func fetchDoggos() SFSPCAResponse {
@@ -115,49 +85,19 @@ func main() {
 		recipients,
 	}
 
-	// Preload doggos
-	doggos = fetchDoggos()
-
 	// configure CRON
 	s := gocron.NewScheduler(time.UTC)
 	s.Every(1).Day().At("14:00").Do(func() {
-		doggos = fetchDoggos()
+		resp := fetchDoggos()
+		doggos, err := updateDoggos(sc, resp)
+		if err != nil {
+			log.Panicf("cannot update doggos %s", err)
+		}
 		for _, recipient := range recipients {
 			sendMail(mg, recipient, doggos)
 		}
 	})
 	s.StartAsync()
-
-	// Load DB with Doggos and detect newly listed Doggos
-	newDoggos, err := findNewlyListedDoggos(sc, doggos)
-	if err != nil {
-		log.Panicf("could not determine which doggos are newly listed %s", err)
-	}
-
-	if len(newDoggos) > 0 {
-		fmt.Println("NEWLY LISTED DOGGOS:")
-		for _, d := range newDoggos {
-			fmt.Printf("%s\n", d.Title)
-		}
-
-		err = saveDoggos(sc, newDoggos)
-		if err != nil {
-			log.Panicf("could not save doggos %s", err)
-		}
-	}
-
-	// Detect adopted doggos
-	adoptedDoggos, err := findAdoptedDoggos(sc, doggos)
-	if err != nil {
-		log.Panicf("could not determine which dogs have been adopted %s", err)
-	}
-
-	if len(adoptedDoggos) > 0 {
-		fmt.Println("DOGGOS FOUND A HOME!")
-		for _, d := range adoptedDoggos {
-			fmt.Printf("%s\n", d.Title)
-		}
-	}
 
 	startWebServer(sc)
 }

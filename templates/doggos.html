@@ -1,5 +1,4 @@
-<html>
-  <head>
+<html> <head>
     <!-- Compiled and minified CSS -->
     <style>
       {{template "styleCSS" .}}
@@ -8,61 +7,199 @@
   <body>
     <div class="container">
       <h1><a href="https://www.sfspca.org/adoptions/dogs/??">Doggos!</a></h1>
-      <p>There are {{ .doggoCount }} doggos here</p>
-      <ul>
-        {{- range $doggo := .doggos }}
-        <div class="row">
-          <li>
-            <h1><a href="{{$doggo.Permalink}}">{{$doggo.Title}}</a></h1>
-            <div class="row col s8">
-              <table>
-                <tr>
-                  <td>Age:</td>
-                  <td>{{$doggo.Age}}</td>
-                </tr>
-                <tr>
-                  <td>Gender:</td>
-                  <td>{{$doggo.Gender}}</td>
-                </tr>
-                <tr>
-                  <td>Weight Category:</td>
-                  <td>{{$doggo.WeightCategory}}</td>
-                </tr>
-                <tr>
-                  <td>Species:</td>
-                  <td>{{$doggo.Species}}</td>
-                </tr>
-                <tr>
-                  <td>Breed:</td>
-                  <td>{{$doggo.Breed}}</td>
-                </tr>
-                <tr>
-                  <td>Color:</td>
-                  <td>{{$doggo.Color}}</td>
-                </tr>
-                <tr>
-                  <td>Location:</td>
-                  <td>{{$doggo.Location}}</td>
-                </tr>
-                <tr>
-                  <td>Site:</td>
-                  <td>{{$doggo.Site}}</td>
-                </tr>
-              </table>
-            </div>
-            <div class="row">
-              {{- range $img := $doggo.ThumbURLs }}
-              <div class="row">
-                <div class="col s6">
-                  <img src="{{$img}}" />
-                </div>
+
+      <!--      Adopted doggos-->
+      <div class="row">
+        <h4>🥺 doggos found homes 🏡</h4>
+        <p>{{ len .doggos.Adopted }} adopted doggos</p>
+        <ul>
+          {{- range $doggo := .doggos.Adopted }}
+          <div class="row">
+            <li>
+              <h1><a href="{{$doggo.Permalink}}">{{$doggo.Title}}</a></h1>
+              <div class="row col s8">
+                <table>
+                  <tr>
+                    <td>Age:</td>
+                    <td>{{$doggo.Age}}</td>
+                  </tr>
+                  <tr>
+                    <td>Gender:</td>
+                    <td>{{$doggo.Gender}}</td>
+                  </tr>
+                  <tr>
+                    <td>Weight Category:</td>
+                    <td>{{$doggo.WeightCategory}}</td>
+                  </tr>
+                  <tr>
+                    <td>Species:</td>
+                    <td>{{$doggo.Species}}</td>
+                  </tr>
+                  <tr>
+                    <td>Breed:</td>
+                    <td>{{$doggo.Breed}}</td>
+                  </tr>
+                  <tr>
+                    <td>Color:</td>
+                    <td>{{$doggo.Color}}</td>
+                  </tr>
+                  <tr>
+                    <td>Location:</td>
+                    <td>{{$doggo.Location}}</td>
+                  </tr>
+                  <tr>
+                    <td>Site:</td>
+                    <td>{{$doggo.Site}}</td>
+                  </tr>
+                  <tr>
+                    <td>Adopted:</td>
+                    <td>{{$doggo.AdoptedAt}}</td>
+                  </tr>
+                </table>
               </div>
-              {{- end }}
-            </div>
-          </li>
-        </div>
-        {{- end }}
-      </ul>
+              <div class="row">
+                {{- range $img := $doggo.ThumbBytes }}
+                <div class="row">
+                  <div class="col s6">
+                    <img src="data:image/jpg;base64, {{$img}}" />
+                  </div>
+                </div>
+                {{- end }}
+              </div>
+            </li>
+          </div>
+          {{- end }}
+        </ul>
+      </div>
+
+
+      <!--      Available doggos-->
+      <div class="row">
+        <h4>new doggos 🐕</h4>
+        <p>There are {{ len .doggos.New }} NEW DOGGOS</p>
+        <ul>
+          {{- range $doggo := .doggos.Available }}
+          <div class="row">
+            <li>
+              <h1><a href="{{$doggo.Permalink}}">{{$doggo.Title}}</a></h1>
+              <div class="row col s8">
+                <table>
+                  <tr>
+                    <td>Age:</td>
+                    <td>{{$doggo.Age}}</td>
+                  </tr>
+                  <tr>
+                    <td>Gender:</td>
+                    <td>{{$doggo.Gender}}</td>
+                  </tr>
+                  <tr>
+                    <td>Weight Category:</td>
+                    <td>{{$doggo.WeightCategory}}</td>
+                  </tr>
+                  <tr>
+                    <td>Species:</td>
+                    <td>{{$doggo.Species}}</td>
+                  </tr>
+                  <tr>
+                    <td>Breed:</td>
+                    <td>{{$doggo.Breed}}</td>
+                  </tr>
+                  <tr>
+                    <td>Color:</td>
+                    <td>{{$doggo.Color}}</td>
+                  </tr>
+                  <tr>
+                    <td>Location:</td>
+                    <td>{{$doggo.Location}}</td>
+                  </tr>
+                  <tr>
+                    <td>Site:</td>
+                    <td>{{$doggo.Site}}</td>
+                  </tr>
+                  <tr>
+                    <td>Last seen:</td>
+                    <td>{{$doggo.LastSeen.Format "Jan 02, 2006 15:04:05 PT"}}</td>
+                  </tr>
+                </table>
+              </div>
+              <div class="row">
+                {{- range $img := $doggo.ThumbURLs }}
+                <div class="row">
+                  <div class="col s6">
+                    <img src="{{$img}}" />
+                  </div>
+                </div>
+                {{- end }}
+              </div>
+            </li>
+          </div>
+          {{- end }}
+        </ul>
+      </div>
+
+      <!--      Available doggos-->
+      <div class="row">
+        <h4>available doggos 🐶</h4>
+        <p>There are {{ len .doggos.Available }} doggos here</p>
+        <ul>
+          {{- range $doggo := .doggos.Available }}
+          <div class="row">
+            <li>
+              <h1><a href="{{$doggo.Permalink}}">{{$doggo.Title}}</a></h1>
+              <div class="row col s8">
+                <table>
+                  <tr>
+                    <td>Age:</td>
+                    <td>{{$doggo.Age}}</td>
+                  </tr>
+                  <tr>
+                    <td>Gender:</td>
+                    <td>{{$doggo.Gender}}</td>
+                  </tr>
+                  <tr>
+                    <td>Weight Category:</td>
+                    <td>{{$doggo.WeightCategory}}</td>
+                  </tr>
+                  <tr>
+                    <td>Species:</td>
+                    <td>{{$doggo.Species}}</td>
+                  </tr>
+                  <tr>
+                    <td>Breed:</td>
+                    <td>{{$doggo.Breed}}</td>
+                  </tr>
+                  <tr>
+                    <td>Color:</td>
+                    <td>{{$doggo.Color}}</td>
+                  </tr>
+                  <tr>
+                    <td>Location:</td>
+                    <td>{{$doggo.Location}}</td>
+                  </tr>
+                  <tr>
+                    <td>Site:</td>
+                    <td>{{$doggo.Site}}</td>
+                  </tr>
+                  <tr>
+                    <td>Last seen:</td>
+                    <td>{{$doggo.LastSeen.Format "Jan 02, 2006 15:04:05 PT"}}</td>
+                  </tr>
+                </table>
+              </div>
+              <div class="row">
+                {{- range $img := $doggo.ThumbURLs }}
+                <div class="row">
+                  <div class="col s6">
+                    <img src="{{$img}}" />
+                  </div>
+                </div>
+                {{- end }}
+              </div>
+            </li>
+          </div>
+          {{- end }}
+        </ul>
+      </div>
     </div>
   </body>
 </html>
