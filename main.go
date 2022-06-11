@@ -82,6 +82,7 @@ func main() {
 
 	emailDomain := viper.GetString("mailgun.domain")
 	privateAPIKey := viper.GetString("mailgun.private_key")
+	recipients := viper.GetStringSlice("emails")
 
 	mg := mailgun.NewMailgun(emailDomain, privateAPIKey)
 
@@ -91,7 +92,9 @@ func main() {
 
 	s.Every(1).Day().At("7:00").Do(func() {
 		doggos = getDoggos()
-		sendMail(mg, doggos)
+		for _, recipient := range recipients {
+			sendMail(mg, recipient, doggos)
+		}
 	})
 
 	startWebServer(doggos)

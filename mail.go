@@ -11,11 +11,10 @@ import (
 	"time"
 )
 
-func sendMail(mg *mailgun.MailgunImpl, doggos SFSPCA_Response) {
+func sendMail(mg *mailgun.MailgunImpl, recipient string, doggos SFSPCA_Response) {
 
 	sender := "doggos@jams.dog"
 	subject := "Doggos!"
-	recipient := "fuziontech@gmail.com"
 
 	// The message object allows you to add attachments and Bcc recipients
 	message := mg.NewMessage(sender, subject, "", recipient)
