@@ -87,11 +87,11 @@ func main() {
 
 	mg := mailgun.NewMailgun(emailDomain, privateAPIKey)
 
-	s := gocron.NewScheduler(time.Local)
+	s := gocron.NewScheduler(time.UTC)
 
 	doggos = getDoggos()
 
-	s.Every(1).Day().At("7:00").Do(func() {
+	s.Every(1).Day().At("14:00").Do(func() {
 		doggos = getDoggos()
 		for _, recipient := range recipients {
 			sendMail(mg, recipient, doggos)
