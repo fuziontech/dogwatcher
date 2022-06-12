@@ -35,7 +35,7 @@ func startWebServer(ctx ServerContext, webDomain string) {
 			c.Error(err)
 		}
 		for _, r := range recipients {
-			sendMail(ctx.mg, r, doggos)
+			sendMail(ctx.mg, r.Email, doggos)
 		}
 		c.String(http.StatusOK, "Sent!")
 	})

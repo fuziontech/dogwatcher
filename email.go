@@ -45,8 +45,8 @@ func saveEmail(ctx ServerContext, email string) error {
 	return err
 }
 
-func getAllEmails(ctx ServerContext) ([]string, error) {
-	var emails []string
+func getAllEmails(ctx ServerContext) ([]Email, error) {
+	var emails []Email
 	err := ctx.gdb.Find(&emails).Error
 	return emails, err
 }

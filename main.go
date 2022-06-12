@@ -32,7 +32,7 @@ func fetchDoggos() SFSPCAResponse {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Panicf("didn't get an OK response from SFSPCA: %s", resp.StatusCode)
+		log.Panicf("didn't get an OK response from SFSPCA: %d", resp.StatusCode)
 	}
 
 	dog_bytes, err := io.ReadAll(resp.Body)
@@ -55,7 +55,7 @@ func main() {
 	viper.AddConfigPath(".")
 	err := viper.ReadInConfig()
 	if err != nil {
-		log.Panicf("Fatal error config file: %w \n", err)
+		log.Panicf("Fatal error config file: %s \n", err)
 	}
 
 	isProd := viper.GetBool("production")
@@ -71,11 +71,6 @@ func main() {
 		log.Panicf("failed to connect to postgres with error %s", err)
 	}
 
-	err = db.AutoMigrate(&Doggo{}, &Email{})
-	if err != nil {
-		log.Panicf("failed to migrate %s", err)
-	}
-
 	// Configure mailgun
 	mg := mailgun.NewMailgun(emailDomain, privateAPIKey)
 
@@ -84,6 +79,11 @@ func main() {
 		db,
 		mg,
 		isProd,
+	}
+
+	err = autoMigrate(ctx)
+	if err != nil {
+		log.Panicf("Cannot automigrate %s\n", err)
 	}
 
 	// configure CRON
@@ -99,7 +99,7 @@ func main() {
 			log.Panicf("cannot get emails %s", err)
 		}
 		for _, recipient := range recipients {
-			sendMail(mg, recipient, doggos)
+			sendMail(mg, recipient.Email, doggos)
 		}
 	})
 	s.Every(1).Hour().Do(func() {

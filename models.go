@@ -63,6 +63,14 @@ type SFSPCAResponse struct {
 	Displayed int16
 }
 
+func autoMigrate(ctx ServerContext) error {
+	err := ctx.gdb.AutoMigrate(&Doggo{}, &Email{})
+	if err != nil {
+		log.Panicf("failed to migrate %s", err)
+	}
+	return err
+}
+
 func (jsonDoggo JSONDoggo) toDoggoModel() Doggo {
 	ID64, err := strconv.ParseUint(strings.Split(jsonDoggo.Permalink, "/")[5], 10, 32)
 	if err != nil {
@@ -127,7 +135,7 @@ func (doggo Doggo) fillThumbs() Doggo {
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
-			log.Panicf("trying to get the thumb and recieved status != 200: %s", resp.StatusCode)
+			log.Panicf("trying to get the thumb and recieved status != 200: %d", resp.StatusCode)
 		}
 		thumb, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
