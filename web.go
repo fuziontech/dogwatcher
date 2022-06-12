@@ -23,13 +23,18 @@ func startWebServer(ctx ServerContext, webDomain string) {
 			"doggos": doggos,
 		})
 	})
+	r.POST("/email/signup", handleRegisterEmail(ctx))
 	r.GET("/emails/send", func(c *gin.Context) {
 		doggos, err := fetchDBDoggos(ctx)
 		if err != nil {
 			c.Error(err)
 		}
 
-		for _, r := range ctx.recipients {
+		recipients, err := getAllEmails(ctx)
+		if err != nil {
+			c.Error(err)
+		}
+		for _, r := range recipients {
 			sendMail(ctx.mg, r, doggos)
 		}
 		c.String(http.StatusOK, "Sent!")

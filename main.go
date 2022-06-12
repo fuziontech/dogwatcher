@@ -21,7 +21,6 @@ const (
 type ServerContext struct {
 	gdb          *gorm.DB
 	mg           *mailgun.MailgunImpl
-	recipients   []string
 	isProduction bool
 }
 
@@ -65,8 +64,6 @@ func main() {
 	webDomain := viper.GetString("web.domain")
 	emailDomain := viper.GetString("mailgun.domain")
 	privateAPIKey := viper.GetString("mailgun.private_key")
-	recipients := viper.GetStringSlice("emails")
-	log.Printf("emails subscribed: %s", recipients)
 
 	// Configure Postgres
 	db, err := gorm.Open(postgres.Open(postgresURL), &gorm.Config{})
@@ -74,7 +71,7 @@ func main() {
 		log.Panicf("failed to connect to postgres with error %s", err)
 	}
 
-	err = db.AutoMigrate(&Doggo{})
+	err = db.AutoMigrate(&Doggo{}, &Email{})
 	if err != nil {
 		log.Panicf("failed to migrate %s", err)
 	}
@@ -86,7 +83,6 @@ func main() {
 	ctx := ServerContext{
 		db,
 		mg,
-		recipients,
 		isProd,
 	}
 
@@ -97,6 +93,10 @@ func main() {
 		doggos, err := updateDoggos(ctx, resp)
 		if err != nil {
 			log.Panicf("cannot update doggos %s", err)
+		}
+		recipients, err := getAllEmails(ctx)
+		if err != nil {
+			log.Panicf("cannot get emails %s", err)
 		}
 		for _, recipient := range recipients {
 			sendMail(mg, recipient, doggos)

@@ -6,10 +6,50 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/mailgun/mailgun-go/v4"
+	"gorm.io/gorm"
+	"html/template"
 	"log"
-	"text/template"
+	"net/http"
 	"time"
 )
+
+type Email struct {
+	gorm.Model
+	Email string `gorm:"unique"`
+}
+
+type EmailForm struct {
+	Email string
+}
+
+func handleRegisterEmail(ctx ServerContext) func(*gin.Context) {
+	return func(c *gin.Context) {
+		var email EmailForm
+		c.BindJSON(&email)
+		err := saveEmail(ctx, email.Email)
+		if err != nil {
+			c.Error(err)
+		}
+		sendDoggoEmail(ctx, email.Email)
+		c.JSON(http.StatusOK, gin.H{
+			"status": "email registered!",
+		})
+	}
+}
+
+func saveEmail(ctx ServerContext, email string) error {
+	e := Email{
+		Email: email,
+	}
+	err := ctx.gdb.Create(&e).Error
+	return err
+}
+
+func getAllEmails(ctx ServerContext) ([]string, error) {
+	var emails []string
+	err := ctx.gdb.Find(&emails).Error
+	return emails, err
+}
 
 func sendMail(mg *mailgun.MailgunImpl, recipient string, doggos DoggoStatus) {
 
@@ -44,4 +84,10 @@ func sendMail(mg *mailgun.MailgunImpl, recipient string, doggos DoggoStatus) {
 	}
 
 	fmt.Printf("ID: %s Resp: %s\n", id, resp)
+}
+
+func sendDoggoEmail(ctx ServerContext, recipient string) error {
+	doggos, err := fetchDBDoggos(ctx)
+	sendMail(ctx.mg, recipient, doggos)
+	return err
 }
