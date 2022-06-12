@@ -3,14 +3,84 @@
     <style>
       {{template "styleCSS" .}}
     </style>
-  </head>
+  <!-- Compiled and minified JavaScript -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  <script src="//unpkg.com/alpinejs" defer></script>
+
+</head>
   <body>
     <div class="container">
       <h1><a href="https://www.sfspca.org/adoptions/dogs/??">Doggos!</a></h1>
 
+      <div class="row">
+        <div class="col s8">
+        <p>This website tracks the SFSPCA's adoption page for Doggos.</p>
+        <p>We keep track of when new
+          Dogs are listed and when Doggos find their furever home. If you are interested in
+          recieving this list into your inbox daily sign up below!</p>
+        </div>
+      </div>
+
+
+      <div class="row">
+        <div class="col s6">
+          <form x-data="ContactForm()" @submit.prevent="submitForm">
+            <div class="input-field col s12">
+              <input id="email" type="email" class="validate" required x-model="formData.email">
+              <label for="email">
+                Email
+              </label>
+              <button :disabled="formLoading" x-text="buttonText" class="btn waves-effect waves-light" type="submit" name="action">Submit
+              </button>
+              <div x-text="formMessage"></div>
+            </div>
+          </form>
+          <script>
+            const FORM_URL = "/email/signup";
+            function ContactForm() {
+              return {
+                formData: {
+                  email: "",
+                },
+                formMessage: "",
+                formLoading: false,
+                buttonText: "Submit",
+                submitForm() {
+                  this.formMessage = "";
+                  this.formLoading = false;
+                  this.buttonText = "Submitting...";
+                  fetch(FORM_URL, {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Accept: "application/json",
+                    },
+                    body: JSON.stringify(this.formData),
+                  })
+                          .then((resp) => {
+                            if (!resp.ok) {
+                               this.formMessage = "Something went wrong.";
+                            } else {
+                              this.formData.email = "";
+                              this.formMessage = "Email successfully signed up!";
+                            }
+                          })
+                          .catch(() => {
+                            this.formMessage = "Something went wrong.";
+                          })
+                          .finally(() => {
+                            this.formLoading = false;
+                            this.buttonText = "Submit";
+                          })
+                }
+              };
+            }
+          </script>
+        </div>
+      </div>
       <!--      Adopted doggos-->
       <div class="row">
-        <h4>🥺 doggos found homes 🏡</h4>
+        <h4>🥺 Recently adopted Doggos 🏡</h4>
         <p>{{ len .doggos.Adopted }} adopted doggos</p>
         <ul>
           {{- range $doggo := .doggos.Adopted }}
