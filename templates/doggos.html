@@ -148,7 +148,7 @@
         <h4>new doggos 🐕</h4>
         <p>There are {{ len .doggos.New }} NEW DOGGOS</p>
         <ul>
-          {{- range $doggo := .doggos.Available }}
+          {{- range $doggo := .doggos.New }}
           <div class="row">
             <li>
               <h1><a href="{{$doggo.Permalink}}">{{$doggo.Title}}</a></h1>
