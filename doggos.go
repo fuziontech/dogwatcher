@@ -21,7 +21,7 @@ func updateDoggos(ctx ServerContext, resp SFSPCAResponse) (DoggoStatus, error) {
 
 		err = saveDoggos(ctx, newDoggos)
 		if err != nil {
-			log.Panicf("could not save doggos %s", err)
+			log.Printf("could not save doggos %s", err)
 			return DoggoStatus{}, err
 		}
 	}
@@ -56,7 +56,7 @@ func fetchAndUpdateDoggos(ctx ServerContext) error {
 	resp := fetchDoggos()
 	_, err := updateDoggos(ctx, resp)
 	if err != nil {
-		log.Panicf("could not update doggos %s", err)
+		log.Printf("could not update doggos %s", err)
 		return err
 	}
 	return nil

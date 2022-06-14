@@ -160,7 +160,7 @@ func saveDoggos(ctx ServerContext, doggos []Doggo) error {
 	for _, doggo := range doggos {
 		err := saveDoggo(ctx, doggo)
 		if err != nil {
-			log.Panicf("could not save doggo %s", err)
+			log.Printf("could not save doggo %s", err)
 			return err
 		}
 	}
