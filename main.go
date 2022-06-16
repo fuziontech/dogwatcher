@@ -98,6 +98,10 @@ func main() {
 		if err != nil {
 			log.Panicf("cannot get emails %s", err)
 		}
+		doggos, err = fetchDBDoggos(ctx)
+		if err != nil {
+			log.Panicf("cannot get db doggos %s", err)
+		}
 		for _, recipient := range recipients {
 			sendMail(mg, recipient.Email, doggos)
 		}
