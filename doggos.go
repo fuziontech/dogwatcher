@@ -7,6 +7,14 @@ import (
 
 func updateDoggos(ctx ServerContext, resp SFSPCAResponse) (DoggoStatus, error) {
 	// Load DB with Doggos and detect newly listed Doggos
+
+	doggos := resp.toDoggos()
+	err := saveDoggos(ctx, doggos)
+	if err != nil {
+		log.Printf("could not save doggos %s", err)
+		return DoggoStatus{}, err
+	}
+
 	newDoggos, err := findNewlyListedDoggos(ctx, resp)
 	if err != nil {
 		log.Panicf("could not determine which doggos are newly listed %s", err)
@@ -17,12 +25,6 @@ func updateDoggos(ctx ServerContext, resp SFSPCAResponse) (DoggoStatus, error) {
 		fmt.Println("NEWLY LISTED DOGGOS:")
 		for _, d := range newDoggos {
 			fmt.Printf("%s\n", d.Title)
-		}
-
-		err = saveDoggos(ctx, newDoggos)
-		if err != nil {
-			log.Printf("could not save doggos %s", err)
-			return DoggoStatus{}, err
 		}
 	}
 

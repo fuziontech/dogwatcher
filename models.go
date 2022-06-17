@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -32,7 +34,7 @@ type JSONDoggo struct {
 		Site           string
 	}
 	Permalink string
-	Thumb     []string `json:"omitempty"`
+	Thumb     interface{}
 	Age       string
 }
 
@@ -63,6 +65,15 @@ type SFSPCAResponse struct {
 	Displayed int16
 }
 
+func (s SFSPCAResponse) toDoggos() []Doggo {
+	var doggos []Doggo
+	jsonDoggos := s.Items
+	for _, doggo := range jsonDoggos {
+		doggos = append(doggos, doggo.toDoggoModel())
+	}
+	return doggos
+}
+
 func autoMigrate(ctx ServerContext) error {
 	err := ctx.gdb.AutoMigrate(&Doggo{}, &Email{})
 	if err != nil {
@@ -79,10 +90,29 @@ func (jsonDoggo JSONDoggo) toDoggoModel() Doggo {
 	ID := uint(ID64)
 
 	doggo := Doggo{}
+	var thumbs []byte
 
-	thumbs, err := json.Marshal(jsonDoggo.Thumb)
-	if err != nil {
-		log.Panicf("could not serialize the thumbs %s", err)
+	switch t := jsonDoggo.Thumb.(type) {
+	case []interface{}:
+		var ts []string
+		for _, v := range t {
+			ts = append(ts, fmt.Sprint(v))
+		}
+		thumbs, err = json.Marshal(ts)
+		if err != nil {
+			log.Panicf("could not serialize the thumbs %s", err)
+		}
+	case map[string]interface{}:
+		var ts []string
+		for _, v := range t {
+			ts = append(ts, fmt.Sprint(v))
+		}
+		thumbs, err = json.Marshal(ts)
+		if err != nil {
+			log.Panicf("could not serialize the thumbs %s", err)
+		}
+	default:
+		log.Panicf("Could not determin type %T -- %v", t, t)
 	}
 
 	doggo.ID = ID
@@ -106,7 +136,7 @@ func (doggo Doggo) ThumbURLs() []string {
 	var thumbs []string
 	err := json.Unmarshal(doggo.JSONThumbURLs, &thumbs)
 	if err != nil {
-		log.Panicf("cannot get thumb urls from json urls %s", err)
+		log.Panicf("cannot get thumb urls from json urls %s %s", doggo.JSONThumbURLs, err)
 	}
 	return thumbs
 }
@@ -152,8 +182,11 @@ func (doggo Doggo) fillThumbs() Doggo {
 }
 
 func saveDoggo(ctx ServerContext, doggo Doggo) error {
-	doggo = doggo.fillThumbs()
-	return ctx.gdb.Create(&doggo).Error
+	//doggo = doggo.fillThumbs()
+	err := ctx.gdb.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&doggo).Error
+	return err
 }
 
 func saveDoggos(ctx ServerContext, doggos []Doggo) error {
@@ -223,7 +256,7 @@ func fetchAdoptedDoggos(ctx ServerContext) ([]Doggo, error) {
 func fetchNewDoggos(ctx ServerContext) ([]Doggo, error) {
 	yesterday := time.Now().Add(-time.Hour * 24)
 	var doggos []Doggo
-	err := ctx.gdb.Where("created_at >= ?", yesterday).Omit("json_thumbs").Find(&doggos).Error
+	err := ctx.gdb.Where("adopted_at is null and created_at >= ?", yesterday).Omit("json_thumbs").Find(&doggos).Error
 	if err != nil {
 		return doggos, err
 	}

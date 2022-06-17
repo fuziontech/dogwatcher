@@ -35,18 +35,18 @@ func fetchDoggos() SFSPCAResponse {
 		log.Panicf("didn't get an OK response from SFSPCA: %d", resp.StatusCode)
 	}
 
-	dog_bytes, err := io.ReadAll(resp.Body)
+	dogBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	var response_object SFSPCAResponse
-	err = json.Unmarshal(dog_bytes, &response_object)
+	var responseObject SFSPCAResponse
+	err = json.Unmarshal(dogBytes, &responseObject)
 	if err != nil {
-		log.Panic(err)
+		log.Panicf("Cannot unmarshal string %s because of error %s", dogBytes, err)
 	}
 
-	return response_object
+	return responseObject
 }
 
 func main() {
