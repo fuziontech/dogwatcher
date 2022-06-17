@@ -32,7 +32,7 @@ type JSONDoggo struct {
 		Site           string
 	}
 	Permalink string
-	Thumb     []string
+	Thumb     []string `json:"omitempty"`
 	Age       string
 }
 
