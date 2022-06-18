@@ -99,7 +99,7 @@
           {{- range $doggo := .doggos.Adopted }}
           <div class="row">
             <li>
-              <h2><a href="{{$doggo.Permalink}}">{{$doggo.Title}}</a></h2>
+              <h2><a id="{{$doggo.Title}}" href="{{$doggo.Permalink}}">{{$doggo.Title}}</a></h2>
               <div class="row col s8">
                 <table>
                   <tr>
@@ -164,7 +164,7 @@
           {{- range $doggo := .doggos.New }}
           <div class="row">
             <li>
-              <h2><a href="{{$doggo.Permalink}}">{{$doggo.Title}}</a></h2>
+              <h2><a id="{{$doggo.Title}}" href="{{$doggo.Permalink}}">{{$doggo.Title}}</a></h2>
               <div class="row col s8">
                 <table>
                   <tr>
@@ -228,7 +228,7 @@
           {{- range $doggo := .doggos.Available }}
           <div class="row">
             <li>
-              <h2><a href="{{$doggo.Permalink}}">{{$doggo.Title}}</a></h2>
+              <h2><a id="{{$doggo.Title}}" href="{{$doggo.Permalink}}">{{$doggo.Title}}</a></h2>
               <div class="row col s8">
                 <table>
                   <tr>
